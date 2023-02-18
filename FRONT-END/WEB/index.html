@@ -1,0 +1,110 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <script src="https://unpkg.com/phosphor-icons"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.0/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <script src="./index.js"></script>
+    <title>chatmania - CHAT</title>
+</head>
+<div class="modal" id="modal-user">
+    <div class="modal-content">
+        <div class="modal-body">
+            <input type="text" name="user" placeholder="nome de usurario"><br>
+            <a href="#">
+                <button type="button">
+                    SALVAR USERNAME
+                </button>
+            </a>
+        </div>
+    </div>
+</div>
+
+<body>
+    <div class="div-contact-list">
+
+    </div>
+    <div class="div-chat">
+        <div class="contact-info">
+
+        </div>
+        <div class="chat-messages">
+
+        </div>
+        <form id="form-chat">
+            <div>
+                <input type="text" name="message" placeholder="Digite sua mensagem">
+                <button type="submit"><i class="ph-paper-plane-right"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let socket = io('http://localhost:3030')
+
+        socket.on('contactInfo', contactaData => {
+            renderContactInfo(contactaData)
+        })
+
+        function renderContactInfo(data) {
+            $('.contact-info').append(`
+                <img src="https://randomuser.me/api/portraits/men/43.jpg" alt="foto de perfil de um homem branco sorrindo">
+                <div class="user-status">
+                    <span>${sessionStorage.contact}</span><br>
+                    <span class="status">Online</span>
+                </div>
+        `)
+        }
+
+        function renderNewMessage(message) {
+            $('.chat-messages').append(message.date + '<div class="message">' + message.message + '</div>')
+            sessionStorage.contact = message.author
+        }
+
+        function renderMyMessage(message) {
+            if (sessionStorage.author != message.author) {
+                renderNewMessage(message)
+            } else {
+                $('.chat-messages').append('<div class="message you">' + message.message + '</div>')
+            }
+        }
+
+        socket.on('previusMessage', (messages) => {
+            for (const message of messages) {
+                renderMyMessage(message)
+            }
+        })
+
+        socket.on('receivedMessage', (message) => {
+            renderMyMessage(message)
+        })
+
+        $('#form-chat').submit((event) => {
+            event.preventDefault();
+
+            sessionStorage.author = $('input[name="user"]').val();
+            var message = $('input[name="message"]').val();
+            var data = new Date();
+            var dataMessage = `${data.getDay()}/${data.getMonth()}/${data.getFullYear()}`
+
+            if (message) {
+                var messageOBJ = {
+                    message: message,
+                    author: sessionStorage.author,
+                    date: dataMessage
+                }
+
+                renderMyMessage(messageOBJ)
+                socket.emit('sendMessage', messageOBJ)
+                $('input[name="message"]').val('');
+            }
+
+        })
+    </script>
+</body>
+
+</html>
